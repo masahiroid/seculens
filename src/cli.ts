@@ -30,7 +30,7 @@ import type { Policy } from "./types.js";
 const cli = new Command()
   .name("seculens")
   .description("SBOM assessment and evidence-based customer reports")
-  .version("1.0.0");
+  .version("1.1.0");
 cli
   .command("mcp")
   .description("Start the SecuLens Model Context Protocol (MCP) stdio server")

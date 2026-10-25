@@ -30,7 +30,7 @@ export function scanSbom(
   const sbom = parseSbom(JSON.parse(input));
   const report: Report = {
     schemaVersion: "1.1",
-    tool: { name: "SecuLens", version: "1.0.0" },
+    tool: { name: "SecuLens", version: "1.1.0" },
     createdAt: options.createdAt || new Date().toISOString(),
     customer: options.customer || "Customer",
     target: options.target || "SBOM",

@@ -61,15 +61,15 @@ seculens sbom ./my-project --format spdx --output sbom.spdx.json
 
 既存の`npm sbom`を呼び出し、インストールスクリプトは実行しません。`npm sbom`に対応したnpmが必要です。Python、PHP、コンテナーなどは既存のツールでSBOMを生成して読み込んでください。
 
-## JS／TSソース解析
+## JS／TSソース解析とサプライチェーン検査
 
 ```sh
 seculens scan sbom.json --db database.json --source ./src --output reports
 ```
 
-直接の`eval`、`new Function`、`innerHTML`／`outerHTML`への代入、循環的複雑度が10を超える関数、ネスト深度が4を超える関数を確認候補として検出します。`&&`、`||`、`??`も複雑度に加算し、入れ子の関数は個別に測定します。構文エラーは解析範囲の不足として記録します。生成物フォルダーとシンボリックリンクはスキップします。
+直接の`eval`、`new Function`、`innerHTML`／`outerHTML`への代入に加え、サプライチェーン攻撃で悪用されやすい**子プロセス起動（`child_process`）**、**環境変数アクセス（`process.env`）**、**機密認証パス（`~/.ssh`, `~/.aws`, `~/.npmrc`など）の参照**、循環的複雑度が10を超える関数、ネスト深度が4を超える関数を確認候補として検出します。さらにプロジェクトルートの`package.json`や`package-lock.json`から、インストール時に自動実行される**ライフサイクルスクリプト（`preinstall` / `install` / `postinstall`）**を持つコンポーネントを検出します。`&&`、`||`、`??`も複雑度に加算し、入れ子の関数は個別に測定します。構文エラーは解析範囲の不足として記録します。生成物フォルダーとシンボリックリンクはスキップします。
 
-構文に基づく確認候補です。この版には関数間データフロー解析、型に基づく呼び出し解決、悪用可能性の判定、Python／PHPのAST解析はありません。同名のローカル変数などによる誤検出や、未検出の危険な構文があり得ます。
+構文およびメタデータに基づく確認候補です。この版には関数間データフロー解析、型に基づく呼び出し解決、悪用可能性の判定、Python／PHPのAST解析はありません。同名のローカル変数などによる誤検出や、未検出の危険な構文があり得ます。
 
 ## ライセンスポリシー
 
@@ -143,6 +143,33 @@ await writeWordReport(report, "customer.docx", "ja", {
   issuer: "評価チーム",
 });
 ```
+
+## Model Context Protocol (MCP) サーバー
+
+Claude Desktop、Cursor、AntigravityなどのAIアシスタントからSecuLensの機能（SBOMスキャン、コード解析、ライセンス判定、顧客レポート生成）を直接呼び出すことができます。
+
+```sh
+seculens mcp
+```
+
+### Claude Desktop / Cursor の設定例 (`claude_desktop_config.json`)
+
+```json
+{
+  "mcpServers": {
+    "seculens": {
+      "command": "seculens",
+      "args": ["mcp"]
+    }
+  }
+}
+```
+
+提供されるMCPツール：
+* `seculens_scan`: SBOMの脆弱性・ライセンス検査
+* `seculens_analyze`: ソースコードのAST解析・サプライチェーン検査
+* `seculens_check_license`: SPDXライセンス式のポリシー適合判定
+* `seculens_generate_report`: 顧客提出用Word/JSONレポートの生成
 
 ## 開発
 

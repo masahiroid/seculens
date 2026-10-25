@@ -5,12 +5,14 @@ import { matchRecord, samePackage, supportedVersion } from "./matcher.js";
 import { licenseFindings } from "./licenses.js";
 import type { Report, OsvRecord, Policy } from "./types.js";
 export * from "./types.js";
-export { parseSbom } from "./sbom.js";
+export { parseSbom, computeDependencyDepths } from "./sbom.js";
 export { matchRecord } from "./matcher.js";
 export { evaluateLicense } from "./licenses.js";
 export { fetchDatabase, validateDatabase } from "./database.js";
-export { analyze } from "./analysis.js";
+export { analyze, checkLifecycleScripts } from "./analysis.js";
+export { checkLockfileIntegrity, checkPackageCoolOff } from "./integrity.js";
 export { writeWordReport } from "./word.js";
+export { MCP_TOOLS, handleMcpRequest, runMcpServer } from "./mcp.js";
 export const sha256 = (text: string) =>
   createHash("sha256").update(text).digest("hex");
 export function scanSbom(

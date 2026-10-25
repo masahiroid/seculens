@@ -5,6 +5,8 @@ export interface Component {
   purl?: string;
   ecosystem?: "npm" | "PyPI" | "Packagist";
   licenses: string[];
+  hashes?: { alg: string; content: string }[];
+  depth?: number;
 }
 export interface Sbom {
   format: "SPDX" | "CycloneDX";

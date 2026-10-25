@@ -22,12 +22,21 @@ import {
   sha256,
   writeWordReport,
   analyze,
+  checkLockfileIntegrity,
+  checkPackageCoolOff,
+  runMcpServer,
 } from "./index.js";
 import type { Policy } from "./types.js";
 const cli = new Command()
   .name("seculens")
   .description("SBOM assessment and evidence-based customer reports")
   .version("1.0.0");
+cli
+  .command("mcp")
+  .description("Start the SecuLens Model Context Protocol (MCP) stdio server")
+  .action(async () => {
+    await runMcpServer();
+  });
 cli
   .command("sbom")
   .description(
@@ -79,6 +88,10 @@ cli
   )
   .option("--policy <file>", "License policy JSON")
   .option("--source <directory>", "Run JS/TS AST review rules")
+  .option(
+    "--cool-off <days>",
+    "Flag packages released within the last N days (cool-off period)",
+  )
   .option("--customer <name>", "Customer name", "Customer")
   .option("--target <name>", "Human-readable system or project name")
   .option(
@@ -141,10 +154,23 @@ cli
     });
     if (opts.source) {
       report.findings.push(...(await analyze(opts.source)));
+      report.findings.push(
+        ...(await checkLockfileIntegrity(opts.source, sbom)),
+      );
       report.sourceAnalysis = {
         language: "JavaScript/TypeScript",
         target: path.basename(path.resolve(opts.source)),
       };
+    } else {
+      report.findings.push(
+        ...(await checkLockfileIntegrity(path.dirname(path.resolve(file)), sbom)),
+      );
+    }
+    if (opts.coolOff) {
+      const days = parseInt(opts.coolOff, 10) || 7;
+      report.findings.push(
+        ...(await checkPackageCoolOff(sbom.components, days)),
+      );
     }
     await mkdir(opts.output, { recursive: true, mode: 0o700 });
     const temporary = await mkdtemp(path.join(opts.output, ".seculens-"));

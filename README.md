@@ -60,15 +60,15 @@ seculens sbom ./my-project --format spdx --output sbom.spdx.json
 
 This invokes the existing `npm sbom` command without running installation scripts. For Python, PHP, containers or other targets, generate an SBOM with your existing tool and import it into SecuLens. npm must support `npm sbom`.
 
-## Optional JS and TS review
+## Optional JS and TS review & supply chain inspection
 
 ```sh
 seculens scan sbom.json --db database.json --source ./src --output reports
 ```
 
-Rules flag direct `eval`, `new Function`, assignments to `innerHTML`/`outerHTML`, and functions exceeding cyclomatic complexity 10 or nesting depth 4. Logical `&&`, `||`, and `??` contribute to complexity. Nested functions are measured separately. Syntax errors appear as coverage findings. Generated directories and symlinks are skipped.
+Rules flag direct `eval`, `new Function`, assignments to `innerHTML`/`outerHTML`, functions exceeding cyclomatic complexity 10 or nesting depth 4, as well as supply-chain risk patterns: child process execution (`child_process`), environment variable access (`process.env`), and sensitive credential path references (`~/.ssh`, `~/.aws`, `~/.npmrc`). Additionally, lifecycle scripts (`preinstall`, `install`, `postinstall`) declared in `package.json` or dependency entries in `package-lock.json` are reported as security candidates. Logical `&&`, `||`, and `??` contribute to complexity. Nested functions are measured separately. Syntax errors appear as coverage findings. Generated directories and symlinks are skipped.
 
-These are syntax-based review candidates. There is no interprocedural dataflow, type-based call resolution, exploitability determination, or Python/PHP AST analysis in this release. Shadowed names can produce candidates requiring manual review; other unsafe constructs can be missed.
+These are syntax- and metadata-based review candidates. There is no interprocedural dataflow, type-based call resolution, exploitability determination, or Python/PHP AST analysis in this release. Shadowed names can produce candidates requiring manual review; other unsafe constructs can be missed.
 
 ## License policy
 

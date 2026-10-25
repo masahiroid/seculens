@@ -50,7 +50,7 @@
     "docx"
   ],
   "dependencies": {
-    "@renovatebot/pep440": "^4.2.4",
+    "@renovatebot/pep440": "^5.0.1",
     "commander": "^14.0.3",
     "docx": "^9.9.0",
     "packageurl-js": "^2.0.1",

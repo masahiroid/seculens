@@ -51,7 +51,7 @@
   ],
   "dependencies": {
     "@renovatebot/pep440": "^4.2.4",
-    "commander": "^14.0.3",
+    "commander": "^15.0.0",
     "docx": "^9.9.0",
     "packageurl-js": "^2.0.1",
     "semver": "^7.8.5",

@@ -51,7 +51,7 @@
     "docx"
   ],
   "dependencies": {
-    "@renovatebot/pep440": "^4.2.4",
+    "@renovatebot/pep440": "^6.0.0",
     "ajv": "^8.20.0",
     "ajv-formats": "^3.0.1",
     "ajv-formats-draft2019": "^1.6.1",

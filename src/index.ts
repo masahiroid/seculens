@@ -30,7 +30,7 @@ export function scanSbom(
   const sbom = parseSbom(JSON.parse(input));
   const report: Report = {
     schemaVersion: "1.1",
-    tool: { name: "SecuLens", version: "1.3.0" },
+    tool: { name: "SecuLens", version: "1.4.0" },
     createdAt: options.createdAt || new Date().toISOString(),
     customer: options.customer || "Customer",
     target: options.target || "SBOM",
@@ -47,7 +47,7 @@ export function scanSbom(
       "License policy checks are not a legal compliance determination.",
       "AST rules identify review candidates and complexity, not proven exploitability.",
       "SBOM content and package identifiers are supplied by the generating tool.",
-      "Packagist matching supports stable numeric versions and SemVer prereleases only; Composer branches and other version forms may be unassessed.",
+      "Packagist matching follows Composer version normalization (up to four numeric parts and dev/alpha/beta/RC/stable/patch stability); branch versions such as dev-main or 1.x-dev are unassessed.",
     ],
   };
   for (const c of sbom.components) {

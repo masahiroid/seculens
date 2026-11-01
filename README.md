@@ -87,7 +87,7 @@ SPDX expressions are parsed structurally. `AND` requires all branches to be allo
 - CycloneDX 1.4 through 1.7 JSON component and dependency records.
 - npm versions: SemVer.
 - PyPI versions: PEP 440; package names are normalized.
-- Packagist versions: stable numeric SemVer-compatible versions, leading `v`, four-part versions ending in `.0`, and SemVer prereleases. Composer branch aliases, nonzero fourth parts and other Composer-specific version syntax are unassessed.
+- Packagist versions follow Composer normalization: leading `v`, one to four numeric parts, build metadata ignored, and stability suffixes ordered dev < alpha (`a`) < beta (`b`) < RC < stable < patch (`pl`, `p`). Branch versions (`dev-main`, `1.x-dev`) remain unassessed.
 - OSV `SEMVER` and `ECOSYSTEM` ranges, explicit affected versions, fixed/last-affected/limit boundaries and withdrawn records. GIT-only ranges are unassessed. Equivalent advisory aliases are merged per component.
 
 A supported package URL (`pkg:npm`, `pkg:pypi`, `pkg:composer`) and version are required. Other ecosystems are recorded as unassessed. Input adapters validate fields used by SecuLens; they are not complete standards conformance validators. SPDX 3, XML, cryptographic attestation verification, customer-specific risk prioritization, source license discovery, and infrastructure configuration audits are not supported yet.

@@ -123,7 +123,7 @@ export async function handleMcpRequest(request: any): Promise<any> {
       result: {
         protocolVersion: "2024-11-05",
         capabilities: { tools: {} },
-        serverInfo: { name: "seculens", version: "1.1.0" },
+        serverInfo: { name: "seculens", version: "1.2.0" },
       },
     };
   }
@@ -170,10 +170,18 @@ export async function handleMcpRequest(request: any): Promise<any> {
           databaseHash: dbHash,
           policy,
         });
-        const lockfileDir = args.lockfileDir || path.dirname(path.resolve(args.sbomPath));
-        report.findings.push(...(await checkLockfileIntegrity(lockfileDir, sbom)));
+        const lockfileDir =
+          args.lockfileDir || path.dirname(path.resolve(args.sbomPath));
+        report.findings.push(
+          ...(await checkLockfileIntegrity(lockfileDir, sbom)),
+        );
         if (args.coolOffDays) {
-          report.findings.push(...(await checkPackageCoolOff(sbom.components, Number(args.coolOffDays))));
+          report.findings.push(
+            ...(await checkPackageCoolOff(
+              sbom.components,
+              Number(args.coolOffDays),
+            )),
+          );
         }
         contentText = JSON.stringify(
           {
@@ -235,20 +243,16 @@ export async function handleMcpRequest(request: any): Promise<any> {
           databaseHash: sha256(dbText),
         });
         if (args.sourceDir) {
-          report.findings.push(...(await analyze(path.resolve(args.sourceDir))));
+          report.findings.push(
+            ...(await analyze(path.resolve(args.sourceDir))),
+          );
         }
         await mkdir(path.resolve(args.outputDir), {
           recursive: true,
           mode: 0o700,
         });
-        const jsonPath = path.join(
-          path.resolve(args.outputDir),
-          "report.json",
-        );
-        const docxPath = path.join(
-          path.resolve(args.outputDir),
-          "report.docx",
-        );
+        const jsonPath = path.join(path.resolve(args.outputDir), "report.json");
+        const docxPath = path.join(path.resolve(args.outputDir), "report.docx");
         await writeFile(jsonPath, JSON.stringify(report, null, 2) + "\n", {
           mode: 0o600,
         });

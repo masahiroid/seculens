@@ -16,6 +16,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import {
   scanSbom,
+  validateDocument,
   parseSbom,
   fetchDatabase,
   validateDatabase,
@@ -30,7 +31,22 @@ import type { Policy } from "./types.js";
 const cli = new Command()
   .name("seculens")
   .description("SBOM assessment and evidence-based customer reports")
-  .version("1.1.0");
+  .version("1.2.0");
+cli
+  .command("validate")
+  .description("Validate SBOM or report JSON offline against bundled schemas")
+  .argument("<file>")
+  .option("--kind <kind>", "sbom or report", "sbom")
+  .action(async (file, opts) => {
+    if (!["sbom", "report"].includes(opts.kind))
+      throw new Error("Kind must be sbom or report");
+    const result = validateDocument(
+      JSON.parse(await readFile(file, "utf8")),
+      opts.kind,
+    );
+    console.log(JSON.stringify(result, null, 2));
+    if (!result.valid) process.exitCode = 2;
+  });
 cli
   .command("mcp")
   .description("Start the SecuLens Model Context Protocol (MCP) stdio server")
@@ -163,7 +179,10 @@ cli
       };
     } else {
       report.findings.push(
-        ...(await checkLockfileIntegrity(path.dirname(path.resolve(file)), sbom)),
+        ...(await checkLockfileIntegrity(
+          path.dirname(path.resolve(file)),
+          sbom,
+        )),
       );
     }
     if (opts.coolOff) {

@@ -89,10 +89,7 @@ export async function checkLockfileIntegrity(
   try {
     const raw = await readFile(composerLockPath, "utf8");
     const lock = JSON.parse(raw);
-    const pkgs = [
-      ...(lock.packages || []),
-      ...(lock["packages-dev"] || []),
-    ];
+    const pkgs = [...(lock.packages || []), ...(lock["packages-dev"] || [])];
 
     for (const p of pkgs) {
       if (!p || typeof p !== "object") continue;
@@ -164,4 +161,3 @@ export async function checkPackageCoolOff(
 
   return findings;
 }
-

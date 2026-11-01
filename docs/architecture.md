@@ -20,7 +20,7 @@ All implementations should preserve schemaVersion 1.0 report concepts: component
 
 ## Next releases
 
-- Formal JSON Schema and full SPDX/CycloneDX conformance validation.
+- ~~Formal JSON Schema and SPDX/CycloneDX schema validation~~ (done in 1.2.0; prose-level conformance rules remain future work).
 - Broader Composer version semantics and test corpus.
 - CVSS and customer-context prioritization with explicit provenance.
 - Report templates, reviewer notes, waivers, remediation and baseline diffs.

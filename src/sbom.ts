@@ -43,7 +43,10 @@ export function parseSbom(input: unknown): Sbom {
         const hashes = Array.isArray(c.hashes)
           ? c.hashes
               .filter((h: any) => text(h.alg) && text(h.content))
-              .map((h: any) => ({ alg: String(h.alg), content: String(h.content) }))
+              .map((h: any) => ({
+                alg: String(h.alg),
+                content: String(h.content),
+              }))
           : undefined;
         components.push({
           id: c["bom-ref"] || `${prefix}${i}`,

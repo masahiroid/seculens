@@ -94,6 +94,15 @@ A supported package URL (`pkg:npm`, `pkg:pypi`, `pkg:composer`) and version are 
 
 “No match” means no matching advisory in the supplied snapshot, not that a component is safe. An offline snapshot must contain the relevant records; SecuLens cannot prove its completeness. A supported version range provides package-level evidence, not proof that vulnerable code is reachable.
 
+## Schema validation
+
+```sh
+seculens validate sbom.json                 # SPDX 2.2/2.3 or CycloneDX 1.4–1.7 JSON
+seculens validate report.json --kind report # SecuLens report schema 1.1
+```
+
+Validation runs offline against the official schemas bundled in `schemas/` (see its README for sources, hashes and licenses). Output is JSON `{valid, schema, errors[]}`. Exit code `0` means valid; `2` means invalid, an unsupported version, or an input error. Schema validation checks structure and formats only; it does not prove an SBOM is complete or that findings are correct.
+
 ## Exit codes
 
 - `0`: assessment completed without incomplete coverage. Review findings may still exist.

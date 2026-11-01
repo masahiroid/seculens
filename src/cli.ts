@@ -31,7 +31,7 @@ import type { Policy } from "./types.js";
 const cli = new Command()
   .name("seculens")
   .description("SBOM assessment and evidence-based customer reports")
-  .version("1.2.0");
+  .version("1.3.0");
 cli
   .command("validate")
   .description("Validate SBOM or report JSON offline against bundled schemas")

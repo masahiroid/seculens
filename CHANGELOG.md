@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.3.0
+
+- Align the release version with SecuLens for Python 1.3.0 (which now requires Python 3.11+). No functional changes.
+
 ## 1.2.0
 
 - Add `seculens validate` for offline JSON Schema validation of SPDX 2.2/2.3 and CycloneDX 1.4–1.7 SBOMs and SecuLens reports (`--kind report`).

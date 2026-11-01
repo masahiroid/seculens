@@ -123,7 +123,7 @@ export async function handleMcpRequest(request: any): Promise<any> {
       result: {
         protocolVersion: "2024-11-05",
         capabilities: { tools: {} },
-        serverInfo: { name: "seculens", version: "1.2.0" },
+        serverInfo: { name: "seculens", version: "1.3.0" },
       },
     };
   }

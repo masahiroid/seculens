@@ -38,7 +38,11 @@ export function validateDocument(
   kind: "sbom" | "report" = "sbom",
 ): ValidationResult {
   let schema: string;
-  if (kind === "report") schema = "report-1.1.schema.json";
+  if (kind === "report")
+    schema =
+      (input as { schemaVersion?: unknown } | null)?.schemaVersion === "1.1"
+        ? "report-1.1.schema.json"
+        : "report-1.2.schema.json";
   else if (kind !== "sbom") throw new Error("Kind must be sbom or report");
   else {
     const d = input as Record<string, unknown> | null;

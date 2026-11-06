@@ -108,8 +108,7 @@ export async function wizard(
   try {
     if (!language)
       lang = (await choice("Language / 言語 (en / ja)", ["en", "ja"], "en")) as
-        | "en"
-        | "ja";
+        "en" | "ja";
     const m = messages[lang];
     console.log(`\n${m.welcome}\n${m.hint}`);
     const settings: [string, string][] = [];

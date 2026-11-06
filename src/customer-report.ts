@@ -51,6 +51,7 @@ export function orderedFindings(report: Report): Finding[] {
   return [...report.findings].sort(
     (a, b) =>
       categories.indexOf(a.category) - categories.indexOf(b.category) ||
+      (a.priority?.level || "P9").localeCompare(b.priority?.level || "P9") ||
       (a.category === "vulnerability"
         ? LEVELS.indexOf(severityLevel(a)) - LEVELS.indexOf(severityLevel(b))
         : 0) ||
@@ -266,8 +267,8 @@ export function customerFront(
     ),
     p(
       ja
-        ? "重要度はCVSS 3.0／3.1の基本値、またはDB提供のラベルに基づきます。複数の根拠がある場合は最も高い重要度を採用し、詳細に根拠を残します。CVSS 2／4のベクトルは値を計算せず保存し、他に判定可能な根拠がなければ未評価とします。重要度は顧客環境での悪用可能性や事業影響を確定するものではありません。"
-        : "Severity uses CVSS 3.0/3.1 base scores or database labels. The highest available severity is displayed when sources differ; all evidence is retained. CVSS 2/4 vectors are preserved but not calculated; absent other usable evidence they remain Unrated. Severity does not establish exploitability or business impact in the customer environment.",
+        ? "重要度はCVSS 3.0／3.1／4.0のスコア、またはDB提供のラベルに基づきます。複数の根拠がある場合は最も高い重要度を採用し、詳細に根拠を残します。CVSS 2のベクトルは値を計算せず保存し、他に判定可能な根拠がなければ未評価とします。重要度は顧客環境での悪用可能性や事業影響を確定するものではありません。"
+        : "Severity uses CVSS 3.0/3.1/4.0 scores or database labels. The highest available severity is displayed when sources differ; all evidence is retained. CVSS 2 vectors are preserved but not calculated; absent other usable evidence they remain Unrated. Severity does not establish exploitability or business impact in the customer environment.",
     ),
     customerTable(
       [
@@ -332,6 +333,8 @@ export function customerFront(
   );
   return children;
 }
+const scoreLabel = (type: string | undefined, ja: boolean): string =>
+  type === "CVSS_V4" ? "CVSS 4" : ja ? "CVSS 3 基本値" : "CVSS 3 base";
 export function severityParagraphs(
   f: Finding,
   ja: boolean,
@@ -345,7 +348,7 @@ export function severityParagraphs(
       spacing: { after: 120 },
       children: [
         new TextRun({
-          text: `${ja ? "重要度" : "Severity"}  ${severityLabel(f, ja)}${score !== undefined ? ` | ${ja ? "CVSS 3 基本値" : "CVSS 3 base"} ${score.toFixed(1)}` : ""}`,
+          text: `${ja ? "重要度" : "Severity"}  ${severityLabel(f, ja)}${score !== undefined ? ` | ${scoreLabel(f.severity?.sources.find((s) => s.score === score)?.type, ja)} ${score.toFixed(1)}` : ""}`,
           bold: true,
           color: PALETTE[severityLevel(f)][2],
         }),
@@ -365,7 +368,7 @@ export function severityParagraphs(
   for (const source of f.severity?.sources || []) {
     const value =
       source.score !== undefined
-        ? `${ja ? "CVSS 3 基本値" : "CVSS 3 base"} ${source.score.toFixed(1)}`
+        ? `${scoreLabel(source.type, ja)} ${source.score.toFixed(1)}`
         : source.type === "database_label"
           ? `${ja ? "DB評価" : "Database label"} ${source.value}`
           : `${source.type} (${ja ? "未計算" : "not calculated"})`;
@@ -385,5 +388,32 @@ export function severityParagraphs(
         ],
       }),
     );
+  if (f.priority) {
+    result.push(
+      new Paragraph({
+        keepNext,
+        spacing: { after: 120 },
+        children: [
+          new TextRun({
+            text: `${ja ? "優先度" : "Priority"}  ${f.priority.level} | ${ja ? "基準" : "baseline"} ${f.priority.baseline}`,
+            bold: true,
+          }),
+        ],
+      }),
+    );
+    for (const factor of f.priority.factors)
+      result.push(
+        new Paragraph({
+          keepNext,
+          spacing: { after: 120 },
+          children: [
+            new TextRun({
+              text: `${factor.factor}: ${factor.value} (${factor.effect > 0 ? "+" : ""}${factor.effect}) | ${factor.justification} | ${factor.source}`,
+              size: 18,
+            }),
+          ],
+        }),
+      );
+  }
   return result;
 }

@@ -3,11 +3,14 @@ import { createHash } from "node:crypto";
 import { parseSbom } from "./sbom.js";
 import { matchRecord, samePackage, supportedVersion } from "./matcher.js";
 import { licenseFindings } from "./licenses.js";
+import { applyPriorities, validateContext } from "./priority.js";
 import type { Report, OsvRecord, Policy } from "./types.js";
 export * from "./types.js";
 export { parseSbom, computeDependencyDepths } from "./sbom.js";
 export { matchRecord } from "./matcher.js";
 export { evaluateLicense } from "./licenses.js";
+export { cvss4Score } from "./cvss4.js";
+export { componentPriority, validateContext } from "./priority.js";
 export { fetchDatabase, validateDatabase } from "./database.js";
 export { analyze, checkLifecycleScripts } from "./analysis.js";
 export { checkLockfileIntegrity, checkPackageCoolOff } from "./integrity.js";
@@ -28,9 +31,13 @@ export function scanSbom(
   } = {},
 ): Report {
   const sbom = parseSbom(JSON.parse(input));
+  const context =
+    options.policy?.context !== undefined
+      ? validateContext(options.policy.context)
+      : undefined;
   const report: Report = {
-    schemaVersion: "1.1",
-    tool: { name: "SecuLens", version: "1.4.0" },
+    schemaVersion: "1.2",
+    tool: { name: "SecuLens", version: "1.5.0" },
     createdAt: options.createdAt || new Date().toISOString(),
     customer: options.customer || "Customer",
     target: options.target || "SBOM",
@@ -46,6 +53,7 @@ export function scanSbom(
       "No match means no matching record in the supplied database snapshot, not absence of vulnerabilities.",
       "License policy checks are not a legal compliance determination.",
       "AST rules identify review candidates and complexity, not proven exploitability.",
+      "Priority combines advisory severity with customer-supplied context that SecuLens does not verify; it does not establish exploitability.",
       "SBOM content and package identifiers are supplied by the generating tool.",
       "Packagist matching follows Composer version normalization (up to four numeric parts and dev/alpha/beta/RC/stable/patch stability); branch versions such as dev-main or 1.x-dev are unassessed.",
     ],
@@ -170,6 +178,7 @@ export function scanSbom(
     }
     groups.push(merged);
   }
+  if (context) applyPriorities(groups, sbom.components, context);
   report.findings = groups.sort((a, b) =>
     [a.category, a.subject, a.ruleId]
       .join(":")

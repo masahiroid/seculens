@@ -1,4 +1,5 @@
-/** Traceable OSV severity. CVSS 3.0/3.1 base scores use FIRST's Roundup. */
+/** Traceable OSV severity. CVSS 3.0/3.1 base scores use FIRST's Roundup; CVSS 4.0 uses cvss4.ts. */
+import { cvss4Score } from "./cvss4.js";
 import { matchRecord, samePackage } from "./matcher.js";
 import type {
   Component,
@@ -159,7 +160,11 @@ export function recordSeverity(
     for (const [index, entry] of items.entries()) {
       if (!entry || typeof entry.score !== "string") continue;
       const score =
-        entry.type === "CVSS_V3" ? cvss3Base(entry.score) : undefined;
+        entry.type === "CVSS_V3"
+          ? cvss3Base(entry.score)
+          : entry.type === "CVSS_V4"
+            ? cvss4Score(entry.score)
+            : undefined;
       sources.push({
         recordId: record.id,
         field: `${field}[${index}]`,

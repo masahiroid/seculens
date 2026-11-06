@@ -42,12 +42,7 @@ export interface OsvRecord {
   }[];
 }
 export type SeverityLevel =
-  | "critical"
-  | "high"
-  | "medium"
-  | "low"
-  | "none"
-  | "unknown";
+  "critical" | "high" | "medium" | "low" | "none" | "unknown";
 export interface SeveritySource {
   recordId: string;
   field: string;
@@ -61,8 +56,22 @@ export interface Severity {
   score?: number;
   sources: SeveritySource[];
 }
+export type PriorityLevel = "P1" | "P2" | "P3" | "P4";
+export interface PriorityFactor {
+  factor: "exposure" | "reachability" | "criticality";
+  value: string;
+  effect: number;
+  source: string;
+  justification: string;
+}
+export interface Priority {
+  level: PriorityLevel;
+  baseline: PriorityLevel;
+  factors: PriorityFactor[];
+}
 export interface Finding {
   severity?: Severity;
+  priority?: Priority;
   category: "vulnerability" | "license" | "security" | "quality" | "coverage";
   ruleId: string;
   subject: string;
@@ -75,9 +84,20 @@ export interface Finding {
   file?: string;
   line?: number;
 }
+export interface ContextFactors {
+  exposure?: string;
+  reachability?: string;
+  criticality?: string;
+  justification: string;
+}
+export interface PolicyContext {
+  defaults?: ContextFactors;
+  components?: (ContextFactors & { name: string; ecosystem?: string })[];
+}
 export interface Policy {
   allow?: string[];
   deny?: string[];
+  context?: PolicyContext;
 }
 export interface Check {
   componentId: string;
@@ -86,7 +106,7 @@ export interface Check {
   reason?: string;
 }
 export interface Report {
-  schemaVersion: "1.1";
+  schemaVersion: "1.2";
   tool: { name: "SecuLens"; version: string };
   createdAt: string;
   customer: string;

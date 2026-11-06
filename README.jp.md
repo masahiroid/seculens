@@ -82,6 +82,32 @@ seculens scan sbom.json --db database.json --source ./src --output reports
 
 SPDX式を構造的に解析します。`AND`は全分岐の許可、`OR`はいずれかの選択肢の許可が必要です。`WITH`例外は式全体を明示的に許可してください。不明・独自・未記載のライセンスは要確認です。宣言されたライセンスとソースの一致、配布義務、顧客の実際の利用方法は検証しません。ポリシー未指定の場合は全ライセンスを要確認とします。
 
+## 優先度付け
+
+ポリシーファイルに任意の `context` を追加すると、環境に合わせて脆弱性を順位付けできます。指定しない場合、レポートに優先度は付きません。重大度とCVSSスコアは変わりません。
+
+```json
+{
+  "allow": ["MIT"],
+  "context": {
+    "defaults": { "exposure": "internal", "justification": "社内ネットワークでのみ稼働" },
+    "components": [
+      { "name": "lodash", "ecosystem": "npm", "reachability": "not-reachable", "justification": "ビルドスクリプトでのみ使用" }
+    ]
+  }
+}
+```
+
+基準は、CriticalがP1、HighとUnratedがP2、MediumがP3、LowとNoneがP4です。指定した要素ごとにP1〜P4の範囲で1段階動きます。NoneはP4のままです。
+
+| 要素 | 上げる | 変えない | 下げる |
+|---|---|---|---|
+| `exposure` | `internet` | `internal` | `isolated` |
+| `reachability` | `reachable` | `unknown` | `not-reachable` |
+| `criticality` | `high` | `medium` | `low` |
+
+パッケージ名（指定があれば`ecosystem`も）が一致し、その要素を指定している最初の`components`の項目が使われ、なければ`defaults`が使われます。どの項目にも`justification`が必須です。各指摘の`priority`には、使った要素、効果、出典、根拠を記録し、Wordレポートにも表示します。SecuLensは申告内容を検証しないため、優先度は悪用可能性を確定するものではありません。
+
 ## 対応入力と照合範囲
 
 - SPDX 2.2／2.3 JSONのパッケージ情報。
@@ -140,7 +166,7 @@ seculens scan bom.json --db database.json --policy policy.json \
 
 重大度の色はCritical／Highが赤、Mediumが黄、Lowが青、Noneが緑、Unratedが灰色です。色に加えてラベルも表示します。脆弱性の件数はコンポーネントごとに別名を統合し、カテゴリ別件数には確認候補も含めます。CVSSの0点／Noneは重大度の区分であり、脆弱性がないことの証明ではありません。
 
-重大度は検証済みCVSS 3.0／3.1基本ベクトルまたは認識可能な`database_specific.severity`に基づきます。パッケージ固有のOSV `affected.severity`は、その影響エントリーの全体ベクトルより優先します。別名統合時には根拠を保存し、対応する重大度のうち最も高いものを表示します。情報源で評価が異なる場合もラベル・ベクトル・スコアをJSONに残します。CVSS 2／4や不正なベクトルは計算せず、他に使える情報がなければUnratedです。本文、AST確認候補、ライセンスから重大度を推測しません。
+重大度は検証済みCVSS 3.0／3.1基本ベクトル、CVSS 4.0ベクトル、または認識可能な`database_specific.severity`に基づきます。パッケージ固有のOSV `affected.severity`は、その影響エントリーの全体ベクトルより優先します。別名統合時には根拠を保存し、対応する重大度のうち最も高いものを表示します。情報源で評価が異なる場合もラベル・ベクトル・スコアをJSONに残します。CVSS 2や不正なベクトルは計算せず、他に使える情報がなければUnratedです。本文、AST確認候補、ライセンスから重大度を推測しません。
 
 JSONスキーマ1.1には任意の`severity`（重大度、任意の基本スコア、情報源ID・フィールドパス・元の値）とCLIの`sourceAnalysis`実行情報を追加しています。表示用の並び替えで評価JSONは変更しません。Wordには重大度の根拠を簡潔に表示し、元のメタデータと参照先はJSONに保存します。このモードは表示形式と重大度の根拠を追加するもので、脆弱性の照合条件は変えません。
 

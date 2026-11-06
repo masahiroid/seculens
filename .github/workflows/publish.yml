@@ -24,7 +24,5 @@ jobs:
       - run: npm ci --ignore-scripts
       - run: npm test
       - run: npm audit --omit=dev
-      # Uses npm trusted publishing (OIDC) when configured on npmjs.com; falls back to the NPM_TOKEN secret.
+      # Authenticates through npm trusted publishing (OIDC). An empty NODE_AUTH_TOKEN would block it.
       - run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

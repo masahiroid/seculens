@@ -37,7 +37,7 @@ export function scanSbom(
       : undefined;
   const report: Report = {
     schemaVersion: "1.2",
-    tool: { name: "SecuLens", version: "1.5.0" },
+    tool: { name: "SecuLens", version: "1.5.1" },
     createdAt: options.createdAt || new Date().toISOString(),
     customer: options.customer || "Customer",
     target: options.target || "SBOM",

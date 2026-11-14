@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.5.1
+
+- Update `commander` to 15 and `@renovatebot/pep440` to 5. Node.js 22.12 or later is now required (commander 15 does not support earlier 22.x releases).
+- No change to findings or report output.
+
 ## 1.5.0
 
 - Calculate CVSS 4.0 scores from `CVSS_V4` vectors using FIRST's published tables. Advisories with only a CVSS 4 vector are no longer Unrated.

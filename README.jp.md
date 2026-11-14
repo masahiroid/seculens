@@ -8,7 +8,7 @@ SecuLensはTypeScriptで実装したセキュリティ評価CLI・ライブラ�
 
 ## インストール
 
-Node.js 22以降とnpmが必要です。
+Node.js 22.12以降とnpmが必要です。
 
 ```sh
 npm install -g seculens

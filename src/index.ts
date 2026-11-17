@@ -13,7 +13,15 @@ export { cvss4Score } from "./cvss4.js";
 export { componentPriority, validateContext } from "./priority.js";
 export { fetchDatabase, validateDatabase } from "./database.js";
 export { analyze, checkLifecycleScripts } from "./analysis.js";
-export { checkLockfileIntegrity, checkPackageCoolOff } from "./integrity.js";
+export {
+  checkLockfileIntegrity,
+  checkPackageCoolOff,
+  coolOffFindings,
+  fetchReleaseDates,
+  expandPackagistVersions,
+  parseCoolOffDays,
+} from "./integrity.js";
+export type { ReleaseDates } from "./integrity.js";
 export { writeWordReport } from "./word.js";
 export { MCP_TOOLS, handleMcpRequest, runMcpServer } from "./mcp.js";
 export const sha256 = (text: string) =>
@@ -37,7 +45,7 @@ export function scanSbom(
       : undefined;
   const report: Report = {
     schemaVersion: "1.2",
-    tool: { name: "SecuLens", version: "1.5.1" },
+    tool: { name: "SecuLens", version: "1.6.0" },
     createdAt: options.createdAt || new Date().toISOString(),
     customer: options.customer || "Customer",
     target: options.target || "SBOM",

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.6.0
+
+- Lockfile checks now agree across TypeScript, Python and PHP. A shared fixture (`supply-chain.json`) checks every finding field in all three. Odd-length hex digests are no longer decoded, mismatch evidence lists SBOM hashes as compact JSON, and the composer.lock recommendation text is the same in every implementation.
+- `--cool-off` now checks npm, PyPI and Packagist releases in every implementation, not only the implementation's own ecosystem. It accepts 1 to 3650 days and rejects anything else with exit code 2; previously an invalid value fell back to 7 days. Release dates come from `registry.npmjs.org`, `pypi.org` and `repo.packagist.org`; lookups time out after 10 seconds and failed lookups are not reported.
+- MCP `seculens_scan` accepts `lockfileDir` and `coolOffDays` (now listed in the tool schema and validated).
+- Document the lockfile integrity and cool-off checks in the README.
+
 ## 1.5.1
 
 - Update `commander` to 15 and `@renovatebot/pep440` to 5. Node.js 22.12 or later is now required (commander 15 does not support earlier 22.x releases).

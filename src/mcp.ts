@@ -12,6 +12,7 @@ import {
   sha256,
   checkLockfileIntegrity,
   checkPackageCoolOff,
+  parseCoolOffDays,
 } from "./index.js";
 import type { Policy, OsvRecord } from "./types.js";
 
@@ -44,6 +45,18 @@ export const MCP_TOOLS = [
             allow: { type: "array", items: { type: "string" } },
             deny: { type: "array", items: { type: "string" } },
           },
+        },
+        lockfileDir: {
+          type: "string",
+          description:
+            "Directory with package-lock.json or composer.lock to check for integrity (default: the SBOM's directory)",
+        },
+        coolOffDays: {
+          type: "integer",
+          minimum: 1,
+          maximum: 3650,
+          description:
+            "Flag npm, PyPI and Packagist releases younger than this many days; sends package names/versions to those registries",
         },
       },
       required: ["sbomPath"],
@@ -124,7 +137,7 @@ export async function handleMcpRequest(request: any): Promise<any> {
       result: {
         protocolVersion: "2024-11-05",
         capabilities: { tools: {} },
-        serverInfo: { name: "seculens", version: "1.5.1" },
+        serverInfo: { name: "seculens", version: "1.6.0" },
       },
     };
   }
@@ -150,6 +163,10 @@ export async function handleMcpRequest(request: any): Promise<any> {
     try {
       let contentText = "";
       if (name === "seculens_scan") {
+        const coolOffDays =
+          args.coolOffDays === undefined || args.coolOffDays === null
+            ? undefined
+            : parseCoolOffDays(args.coolOffDays);
         const input = await readFile(path.resolve(args.sbomPath), "utf8");
         const sbom = parseSbom(JSON.parse(input));
         let records: OsvRecord[] = [];
@@ -176,12 +193,9 @@ export async function handleMcpRequest(request: any): Promise<any> {
         report.findings.push(
           ...(await checkLockfileIntegrity(lockfileDir, sbom)),
         );
-        if (args.coolOffDays) {
+        if (coolOffDays !== undefined) {
           report.findings.push(
-            ...(await checkPackageCoolOff(
-              sbom.components,
-              Number(args.coolOffDays),
-            )),
+            ...(await checkPackageCoolOff(sbom.components, coolOffDays)),
           );
         }
         contentText = JSON.stringify(

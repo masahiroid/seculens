@@ -119,3 +119,47 @@ test("report output replaces symlinks without overwriting their targets", async 
     await rm(dir, { recursive: true, force: true });
   }
 });
+test("CLI rejects an invalid --cool-off before writing a report", async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), "seculens-cli-"));
+  for (const value of ["0", "abc", "3651"]) {
+    await assert.rejects(
+      exec(process.execPath, [
+        "dist/cli.js",
+        "scan",
+        "examples/spdx.json",
+        "--db",
+        "examples/database.json",
+        "--cool-off",
+        value,
+        "--output",
+        dir,
+      ]),
+      (e) => e.code === 2 && e.stderr.includes("Cool-off must be a whole number"),
+    );
+  }
+  await assert.rejects(readFile(path.join(dir, "report.json")));
+});
+test("CLI reports insecure lockfile URLs next to the SBOM", async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), "seculens-cli-"));
+  await writeFile(
+    path.join(dir, "sbom.json"),
+    await readFile("examples/cyclonedx.json", "utf8"),
+  );
+  await writeFile(
+    path.join(dir, "composer.lock"),
+    JSON.stringify({ packages: [{ name: "acme/http", dist: { url: "http://mirror.example/a.zip" } }] }),
+  );
+  await exec(process.execPath, [
+    "dist/cli.js",
+    "scan",
+    path.join(dir, "sbom.json"),
+    "--db",
+    "examples/database.json",
+    "--output",
+    path.join(dir, "out"),
+  ]);
+  const report = JSON.parse(await readFile(path.join(dir, "out", "report.json"), "utf8"));
+  assert.ok(
+    report.findings.some((f) => f.ruleId === "SC-INSECURE-REGISTRY-URL" && f.subject === "acme/http"),
+  );
+});

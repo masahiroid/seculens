@@ -25,13 +25,14 @@ import {
   analyze,
   checkLockfileIntegrity,
   checkPackageCoolOff,
+  parseCoolOffDays,
   runMcpServer,
 } from "./index.js";
 import type { Policy } from "./types.js";
 const cli = new Command()
   .name("seculens")
   .description("SBOM assessment and evidence-based customer reports")
-  .version("1.5.1");
+  .version("1.6.0");
 cli
   .command("validate")
   .description("Validate SBOM or report JSON offline against bundled schemas")
@@ -106,7 +107,7 @@ cli
   .option("--source <directory>", "Run JS/TS AST review rules")
   .option(
     "--cool-off <days>",
-    "Flag packages released within the last N days (cool-off period)",
+    "Flag npm, PyPI and Packagist releases younger than N days (1-3650); sends package names/versions to those registries",
   )
   .option("--customer <name>", "Customer name", "Customer")
   .option("--target <name>", "Human-readable system or project name")
@@ -125,6 +126,8 @@ cli
   .action(async (file, opts) => {
     if (Boolean(opts.db) === Boolean(opts.fetchOsv))
       throw new Error("Specify exactly one of --db or --fetch-osv");
+    const coolOffDays =
+      opts.coolOff === undefined ? undefined : parseCoolOffDays(opts.coolOff);
     if (!["standard", "customer"].includes(opts.reportStyle))
       throw new Error("Report style must be standard or customer");
     if (!["en", "ja"].includes(opts.lang))
@@ -185,10 +188,9 @@ cli
         )),
       );
     }
-    if (opts.coolOff) {
-      const days = parseInt(opts.coolOff, 10) || 7;
+    if (coolOffDays !== undefined) {
       report.findings.push(
-        ...(await checkPackageCoolOff(sbom.components, days)),
+        ...(await checkPackageCoolOff(sbom.components, coolOffDays)),
       );
     }
     await mkdir(opts.output, { recursive: true, mode: 0o700 });

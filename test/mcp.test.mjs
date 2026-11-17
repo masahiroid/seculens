@@ -1,6 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import path from "node:path";
+import { mkdtemp, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { handleMcpRequest, MCP_TOOLS } from "../dist/index.js";
 
@@ -81,3 +83,38 @@ test("MCP tools/call seculens_scan performs offline assessment", async () => {
   assert.ok(Array.isArray(data.findings));
 });
 
+
+test("MCP seculens_scan checks lockfileDir and rejects invalid coolOffDays", async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), "seculens-mcp-"));
+  await writeFile(
+    path.join(dir, "composer.lock"),
+    JSON.stringify({ packages: [{ name: "acme/http", dist: { url: "http://mirror.example/a.zip" } }] }),
+  );
+  const call = (extra) =>
+    handleMcpRequest({
+      jsonrpc: "2.0",
+      id: 9,
+      method: "tools/call",
+      params: {
+        name: "seculens_scan",
+        arguments: {
+          sbomPath: path.join(ROOT, "examples/cyclonedx.json"),
+          dbPath: path.join(ROOT, "examples/database.json"),
+          lockfileDir: dir,
+          ...extra,
+        },
+      },
+    });
+  const ok = await call({});
+  assert.equal(ok.result.isError, false);
+  assert.ok(
+    JSON.parse(ok.result.content[0].text).findings.some(
+      (f) => f.ruleId === "SC-INSECURE-REGISTRY-URL",
+    ),
+  );
+  for (const coolOffDays of [0, 1.5, "x"]) {
+    const bad = await call({ coolOffDays });
+    assert.equal(bad.result.isError, true);
+    assert.match(bad.result.content[0].text, /Cool-off must be a whole number/);
+  }
+});

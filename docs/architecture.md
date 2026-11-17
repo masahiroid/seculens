@@ -28,3 +28,7 @@ All implementations share `schemas/report-1.2.schema.json`, whose report concept
 SecuLens does not claim Trivy feature parity. It focuses on auditable SBOM assessment and reporting.
 
 See the README customer report mode section for severity evidence and layout options.
+
+## Supply-chain checks
+
+Lockfile integrity (`package-lock.json`, `composer.lock`) runs on every scan without network access. `--cool-off` looks up release dates for npm, PyPI and Packagist components and evaluates them with a pure function, so the decision is tested offline against the shared `supply-chain.json` fixture, which all three implementations must reproduce field for field. Failed lookups produce no finding.

@@ -49,6 +49,21 @@ seculens scan sbom.json --fetch-osv --policy policy.json --output reports
 
 Every assessment saves `report.json`, `report.docx`, the original `sbom.json`, and `database.json`. Reports include database and SBOM SHA-256 digests so the evidence can be retained and reused. Replaying a snapshot stabilizes findings; report timestamps and generated DOCX metadata can differ.
 
+## Lockfile integrity and cool-off
+
+Every scan reads `package-lock.json` and `composer.lock` from the `--source` directory, or from the SBOM's directory when `--source` is not given. It reports:
+
+- `SC-INSECURE-REGISTRY-URL`: a package resolved or downloaded over plain `http://`.
+- `SC-INTEGRITY-MISMATCH`: a `package-lock.json` `integrity` value that matches none of the SBOM hashes for the same name, version and algorithm. Hex SBOM digests are compared in base64, as npm stores them.
+
+A missing or unparseable lockfile is skipped. This check does not use the network.
+
+```sh
+seculens scan sbom.json --db database.json --cool-off 7 --output reports
+```
+
+`--cool-off DAYS` (1 to 3650) reports `SC-PACKAGE-AGE-UNVERIFIED` for npm, PyPI and Packagist releases younger than `DAYS` days. It sends package names and versions to `registry.npmjs.org`, `pypi.org` and `repo.packagist.org`. A release date that cannot be fetched is not reported, so a clean result does not prove that every release is old enough. The MCP `seculens_scan` tool accepts the same options as `lockfileDir` and `coolOffDays`.
+
 ## Generate an SBOM
 
 For an npm project with its dependencies already installed:

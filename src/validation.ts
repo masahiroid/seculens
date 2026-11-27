@@ -35,15 +35,19 @@ function validator(name: string): ValidateFunction {
 }
 export function validateDocument(
   input: unknown,
-  kind: "sbom" | "report" = "sbom",
+  kind: "sbom" | "report" | "waivers" = "sbom",
 ): ValidationResult {
   let schema: string;
-  if (kind === "report")
+  if (kind === "report") {
+    const version = (input as { schemaVersion?: unknown } | null)
+      ?.schemaVersion;
     schema =
-      (input as { schemaVersion?: unknown } | null)?.schemaVersion === "1.1"
-        ? "report-1.1.schema.json"
-        : "report-1.2.schema.json";
-  else if (kind !== "sbom") throw new Error("Kind must be sbom or report");
+      version === "1.1" || version === "1.2"
+        ? `report-${version}.schema.json`
+        : "report-1.3.schema.json";
+  } else if (kind === "waivers") schema = "waivers-1.0.schema.json";
+  else if (kind !== "sbom")
+    throw new Error("Kind must be sbom, report or waivers");
   else {
     const d = input as Record<string, unknown> | null;
     if (

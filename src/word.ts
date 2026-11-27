@@ -56,6 +56,12 @@ export async function writeWordReport(
       "構成部品の一覧と識別情報は、SBOM生成ツールから取得した情報に依存します。",
     "Packagist matching follows Composer version normalization (up to four numeric parts and dev/alpha/beta/RC/stable/patch stability); branch versions such as dev-main or 1.x-dev are unassessed.":
       "PackagistはComposerのバージョン正規化（最大4桁の数値とdev/alpha/beta/RC/stable/patchの安定度）に従って照合します。dev-mainや1.x-devなどのブランチ指定は未判定になります。",
+    "Waivers record customer-approved decisions that SecuLens does not verify; waived findings remain in the report and are excluded only from exit codes.":
+      "適用除外（waiver）は顧客が承認した判断を記録したもので、SecuLensはその内容を検証しません。適用除外した指摘は報告書に残り、終了コードの判定からのみ除外されます。",
+    "Remediate the finding or renew the waiver after a new review.":
+      "指摘に対応するか、再審査のうえ適用除外を更新してください。",
+    "Remove the waiver, or correct its ruleId or subject.":
+      "適用除外を削除するか、ruleIdまたはsubjectを修正してください。",
   };
   const localize = (text: string) => (ja ? translations[text] || text : text);
   const status = (text: string) =>
@@ -174,6 +180,15 @@ export async function writeWordReport(
         p(
           `${component ? `${component.name}@${component.version || "unknown"}` : f.subject} | ${status(f.status)}${f.line ? ` | line ${f.line}` : ""}`,
         ),
+        ...(f.waiver
+          ? [
+              p(
+                ja
+                  ? `適用除外 ${f.waiver.expires}まで | 承認者 ${f.waiver.approvedBy} | ${f.waiver.justification} | ${f.waiver.source}`
+                  : `Waived until ${f.waiver.expires} | approved by ${f.waiver.approvedBy} | ${f.waiver.justification} | ${f.waiver.source}`,
+              ),
+            ]
+          : []),
         p(`${ja ? "根拠" : "Evidence"} ${f.evidence}`),
         p(`${ja ? "推奨対応" : "Action"} ${localize(f.recommendation)}`),
       );

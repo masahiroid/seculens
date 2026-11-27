@@ -13,6 +13,9 @@ import {
   checkLockfileIntegrity,
   checkPackageCoolOff,
   parseCoolOffDays,
+  applyWaivers,
+  validateWaivers,
+  unwaived,
 } from "./index.js";
 import type { Policy, OsvRecord } from "./types.js";
 
@@ -45,6 +48,11 @@ export const MCP_TOOLS = [
             allow: { type: "array", items: { type: "string" } },
             deny: { type: "array", items: { type: "string" } },
           },
+        },
+        waivers: {
+          type: "object",
+          description:
+            "Waiver file contents (schemaVersion 1.0); waived findings keep their status and gain a waiver record",
         },
         lockfileDir: {
           type: "string",
@@ -137,7 +145,7 @@ export async function handleMcpRequest(request: any): Promise<any> {
       result: {
         protocolVersion: "2024-11-05",
         capabilities: { tools: {} },
-        serverInfo: { name: "seculens", version: "1.6.0" },
+        serverInfo: { name: "seculens", version: "1.7.0" },
       },
     };
   }
@@ -167,6 +175,10 @@ export async function handleMcpRequest(request: any): Promise<any> {
           args.coolOffDays === undefined || args.coolOffDays === null
             ? undefined
             : parseCoolOffDays(args.coolOffDays);
+        const waivers =
+          args.waivers === undefined || args.waivers === null
+            ? undefined
+            : validateWaivers(args.waivers);
         const input = await readFile(path.resolve(args.sbomPath), "utf8");
         const sbom = parseSbom(JSON.parse(input));
         let records: OsvRecord[] = [];
@@ -198,16 +210,24 @@ export async function handleMcpRequest(request: any): Promise<any> {
             ...(await checkPackageCoolOff(sbom.components, coolOffDays)),
           );
         }
+        if (waivers)
+          report.findings = applyWaivers(
+            report.findings,
+            waivers.waivers,
+            report.createdAt.slice(0, 10),
+          );
+        const counted = unwaived(report.findings);
         contentText = JSON.stringify(
           {
             summary: {
               components: report.sbom.components.length,
               findings: report.findings.length,
-              affectedVulnerabilities: report.findings.filter(
+              waived: report.findings.length - counted.length,
+              affectedVulnerabilities: counted.filter(
                 (f) =>
                   f.category === "vulnerability" && f.status === "affected",
               ).length,
-              deniedLicenses: report.findings.filter(
+              deniedLicenses: counted.filter(
                 (f) => f.category === "license" && f.status === "denied",
               ).length,
             },

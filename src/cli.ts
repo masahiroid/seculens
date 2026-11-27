@@ -27,20 +27,25 @@ import {
   checkPackageCoolOff,
   parseCoolOffDays,
   runMcpServer,
+  applyWaivers,
+  validateWaivers,
+  unwaived,
 } from "./index.js";
 import type { Policy } from "./types.js";
+const WAIVER_LIMITATION =
+  "Waivers record customer-approved decisions that SecuLens does not verify; waived findings remain in the report and are excluded only from exit codes.";
 const cli = new Command()
   .name("seculens")
   .description("SBOM assessment and evidence-based customer reports")
-  .version("1.6.0");
+  .version("1.7.0");
 cli
   .command("validate")
   .description("Validate SBOM or report JSON offline against bundled schemas")
   .argument("<file>")
-  .option("--kind <kind>", "sbom or report", "sbom")
+  .option("--kind <kind>", "sbom, report or waivers", "sbom")
   .action(async (file, opts) => {
-    if (!["sbom", "report"].includes(opts.kind))
-      throw new Error("Kind must be sbom or report");
+    if (!["sbom", "report", "waivers"].includes(opts.kind))
+      throw new Error("Kind must be sbom, report or waivers");
     const result = validateDocument(
       JSON.parse(await readFile(file, "utf8")),
       opts.kind,
@@ -104,6 +109,10 @@ cli
     "Send package names/ecosystems to OSV and save a database snapshot",
   )
   .option("--policy <file>", "License policy JSON")
+  .option(
+    "--waivers <file>",
+    "Waiver JSON: waived findings stay in the report but do not set the exit code",
+  )
   .option("--source <directory>", "Run JS/TS AST review rules")
   .option(
     "--cool-off <days>",
@@ -162,6 +171,9 @@ cli
       )
         throw new Error("Policy allow/deny must be string arrays");
     }
+    const waivers = opts.waivers
+      ? validateWaivers(JSON.parse(await readFile(opts.waivers, "utf8")))
+      : undefined;
     const report = scanSbom(input, records, {
       customer: opts.customer,
       target: opts.target || path.basename(file),
@@ -192,6 +204,14 @@ cli
       report.findings.push(
         ...(await checkPackageCoolOff(sbom.components, coolOffDays)),
       );
+    }
+    if (waivers) {
+      report.findings = applyWaivers(
+        report.findings,
+        waivers.waivers,
+        report.createdAt.slice(0, 10),
+      );
+      report.limitations.push(WAIVER_LIMITATION);
     }
     await mkdir(opts.output, { recursive: true, mode: 0o700 });
     const temporary = await mkdtemp(path.join(opts.output, ".seculens-"));
@@ -230,9 +250,10 @@ cli
         ? `構成部品 ${report.sbom.components.length}件、指摘 ${report.findings.length}件、未評価 ${report.checks.filter((c) => c.status === "unassessed").length}件。レポート: ${opts.output}`
         : `${report.sbom.components.length} components; ${report.findings.length} findings; ${report.checks.filter((c) => c.status === "unassessed").length} incomplete component assessments. Reports: ${opts.output}`,
     );
+    const counted = unwaived(report.findings);
     if (
       opts.failOnFindings &&
-      report.findings.some(
+      counted.some(
         (f) =>
           f.status === "affected" ||
           f.status === "denied" ||
@@ -240,7 +261,7 @@ cli
       )
     )
       process.exitCode = 1;
-    else if (report.findings.some((f) => f.status === "unassessed"))
+    else if (counted.some((f) => f.status === "unassessed"))
       process.exitCode = 2;
   });
 cli

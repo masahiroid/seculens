@@ -83,6 +83,24 @@ export interface Finding {
   references?: string[];
   file?: string;
   line?: number;
+  waiver?: AppliedWaiver;
+}
+export interface Waiver {
+  ruleId: string;
+  subject?: string;
+  justification: string;
+  approvedBy: string;
+  expires: string;
+}
+export interface WaiverFile {
+  schemaVersion: "1.0";
+  waivers: Waiver[];
+}
+export interface AppliedWaiver {
+  source: string;
+  justification: string;
+  approvedBy: string;
+  expires: string;
 }
 export interface ContextFactors {
   exposure?: string;
@@ -106,7 +124,7 @@ export interface Check {
   reason?: string;
 }
 export interface Report {
-  schemaVersion: "1.2";
+  schemaVersion: "1.3";
   tool: { name: "SecuLens"; version: string };
   createdAt: string;
   customer: string;

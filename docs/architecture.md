@@ -16,11 +16,11 @@ Input and DB hashes bind the report to exact evidence. Matching uses version sem
 
 ## Cross-language contract
 
-All implementations share `schemas/report-1.2.schema.json`, whose report concepts are: components, dependency edges, checks, findings, database identity, coverage limitations. Use the same advisory fixtures and boundary cases to establish parity. CLI timestamps may differ, but findings should agree for identical inputs, policy and DB snapshots.
+All implementations share `schemas/report-1.3.schema.json`, whose report concepts are: components, dependency edges, checks, findings, database identity, coverage limitations. Use the same advisory fixtures and boundary cases to establish parity. CLI timestamps may differ, but findings should agree for identical inputs, policy and DB snapshots.
 
 ## Next releases
 
-- Report templates, reviewer notes, waivers, remediation and baseline diffs.
+- Report templates, reviewer notes, remediation and baseline diffs.
 - Dataflow-based AST rules with documented framework coverage.
 - OS package and vendor advisories, and configurable DB providers.
 - Schema-aware SPDX 3 and XML adapters.
@@ -32,3 +32,7 @@ See the README customer report mode section for severity evidence and layout opt
 ## Supply-chain checks
 
 Lockfile integrity (`package-lock.json`, `composer.lock`) runs on every scan without network access. `--cool-off` looks up release dates for npm, PyPI and Packagist components and evaluates them with a pure function, so the decision is tested offline against the shared `supply-chain.json` fixture, which all three implementations must reproduce field for field. Failed lookups produce no finding.
+
+## Waivers
+
+`--waivers` reads a file that follows `schemas/waivers-1.0.schema.json`. Waivers are applied after every other check, by a pure function evaluated on the report date (UTC), so the shared `waivers.json` fixture tests matching, expiry and the `WAIVER-EXPIRED` and `WAIVER-UNMATCHED` findings offline in all three implementations. A waived finding keeps its status; only exit codes ignore it.
